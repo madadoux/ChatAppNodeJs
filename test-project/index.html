@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Hello world</title></head>
+    <style type="text/css">
+      body{
+        background-color: beige;
+        color: CornflowerBlue ;
+      }
+      button{
+        border : 1px , solid , DarkCyan ;
+        width : 100px;
+        height : 40px ;
+      }
+      div{
+      	font-size: 22px;
+      	width:100%;
+      	height:70px;
+       
+        color: white;
+      }
+      input{
+        width : 200px ;
+        height : 50px;
+      }
+	  h2 {
+	  color :white;
+	  background-color : blue;
+	  }
+      #message-container{
+	  background-color : green;
+      	height:80%;
+      	width:100%;
+      }
+	    #pmessage-container{
+		background-color : red;
+      	height:80%;
+      	width:100%;
+      }
+	  
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+	
+      var socket = io();
+        function setUsername(op){
+		var n= document.getElementById('name').value; 
+            socket.emit('setUsername', {name:n , option :op });
+        };
+		var  privatChat = false ; 
+		var myid = -1;
+		
+		function publicChat(){ 
+		 privatChat = false ;
+		 updateScreen();
+		 }
+		 
+		 function PrivateChat(){ 
+		 privatChat = true ;
+	      var ids = [myid,document.getElementById('pperson').value ]; 
+		  ids.sort();
+		 var room = ids[0]+'_'+ ids[1] ; 
+	//	 room = '123';
+        alert(room); 
+			socket.emit('room' , room );
+			updateScreen();
+        };
+        var user;
+        socket.on('userExists', function(data){
+            document.getElementById('error-container').innerHTML = data;
+        });
+		
+		function updateScreen(){
+		
+		   document.body.innerHTML = '<input type="text" id="message">\
+            <button type="button" name="button" onclick="sendMessage()">Send</button>\
+            <h2> public chat </h2> <div id="message-container"></div> <br> <br> <br> <br> <br> <h2> private chat </h2> <div id="pmessage-container"></div> ';
+		}
+        socket.on('userSet', function(data){
+		    myid = data.id; 
+			alert('myid '+myid); 
+            user = data.username;
+         
+        });
+        function sendMessage(){
+            var msg = document.getElementById('message').value;
+            if(msg){
+			   if (privatChat==false)
+                socket.emit('msg', {message: msg, user: user});
+				else  
+				socket.emit('pmsg', {message: msg, user: user});
+            }
+        }
+        socket.on('newmsg', function(data){
+            if(user){
+                document.getElementById('message-container').innerHTML += '<div><b>' + data.user + '</b>: ' + data.message + '</div>'
+            }
+        })
+		socket.on('pnewmsg', function(data){
+            if(user){
+                document.getElementById('pmessage-container').innerHTML += '<div><b>' + data.user + '</b>: ' + data.message + '</div>'
+            }
+        })
+    </script>	
+    <body>
+    <h2>Hello from the other side</h2>
+        <div id="error-container"></div>
+        <input id="name" type="text" name="name" value="" placeholder="NICK NAME : ">
+		    <button type="button" name="button" onclick="setUsername('r')"> Register </button>
+        <button type="button" name="button" onclick="setUsername('l')"> Login </button><br> <br>
+		 <button type="button" name="button" onclick="publicChat()"> Start public chatting </button><br> 
+		 		   <input id="pperson" type="number" name="name" value="" placeholder="another user id ">
+				   <br>
+		 <button type="button" name="button" onclick="PrivateChat()"> Start private chatting </button>
+
+    </body>
+</html>
